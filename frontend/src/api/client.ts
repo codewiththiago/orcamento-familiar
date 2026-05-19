@@ -4,7 +4,8 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // needed for httpOnly cookie (refresh token)
+  withCredentials: true,
+  timeout: 10000,
 })
 
 let accessToken: string | null = null

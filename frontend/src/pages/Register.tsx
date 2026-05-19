@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Wallet, Loader2 } from 'lucide-react'
+import { Wallet, Loader2, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { validateInvite, register as apiRegister } from '../api/auth'
-import { setAccessToken } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 
 interface FormValues {
@@ -14,17 +13,27 @@ interface FormValues {
   confirmPassword: string
 }
 
+function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 text-xs ${met ? 'text-green-400' : 'text-slate-500'}`}>
+      {met ? <Check size={11} /> : <X size={11} />}
+      {label}
+    </div>
+  )
+}
+
 export default function Register() {
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loginWithData } = useAuth()
 
   const [validating, setValidating] = useState(!!token)
   const [inviteEmail, setInviteEmail] = useState('')
   const [invalidToken, setInvalidToken] = useState(false)
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>()
+  const password = watch('password', '')
 
   useEffect(() => {
     if (user) { navigate('/dashboard'); return }
@@ -53,7 +62,7 @@ export default function Register() {
         email: values.email,
         password: values.password,
       })
-      setAccessToken(data.accessToken)
+      loginWithData(data)
       toast.success(`Bem-vindo, ${data.name}!`)
       navigate('/dashboard')
     } catch {
@@ -132,9 +141,24 @@ export default function Register() {
               <input
                 className="input"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
-                {...register('password', { required: 'Senha obrigatória', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
+                placeholder="Ex: minhasenha1"
+                {...register('password', {
+                  required: 'Senha obrigatória',
+                  validate: (v) => {
+                    if (v.length < 6) return 'Mínimo 6 caracteres'
+                    if (!/[a-zA-Z]/.test(v)) return 'Precisa ter pelo menos 1 letra'
+                    if (!/[0-9]/.test(v)) return 'Precisa ter pelo menos 1 número'
+                    return true
+                  },
+                })}
               />
+              {password && (
+                <div className="mt-2 space-y-0.5">
+                  <PasswordRequirement met={password.length >= 6} label="Mínimo 6 caracteres" />
+                  <PasswordRequirement met={/[a-zA-Z]/.test(password)} label="Pelo menos 1 letra" />
+                  <PasswordRequirement met={/[0-9]/.test(password)} label="Pelo menos 1 número" />
+                </div>
+              )}
               {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
             </div>
 
