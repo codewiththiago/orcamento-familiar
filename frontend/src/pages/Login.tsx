@@ -78,11 +78,13 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-4 pt-4 border-t border-slate-700/50">
-            <p className="text-xs text-slate-500 text-center">
-              user1@orcamento.com / User1@123<br />
-              user2@orcamento.com / User2@123
-            </p>
+          <div className="mt-4 pt-4 border-t border-slate-700/50 text-center">
+            <button
+              onClick={() => navigate('/register')}
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              Primeiro acesso? Criar conta →
+            </button>
           </div>
         </div>
       </div>

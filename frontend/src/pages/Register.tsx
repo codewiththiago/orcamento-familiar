@@ -94,9 +94,13 @@ export default function Register() {
         </div>
 
         <div className="card">
-          {token && (
+          {token ? (
             <p className="text-xs text-accent bg-accent/10 rounded-lg px-3 py-2 mb-4 text-center">
               Você foi convidado para {inviteEmail}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 bg-bg-tertiary rounded-lg px-3 py-2 mb-4 text-center">
+              Primeiro acesso ao sistema. Preencha seus dados para criar a conta.
             </p>
           )}
 
