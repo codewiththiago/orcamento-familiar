@@ -96,11 +96,8 @@ using (var scope = app.Services.CreateScope())
     await DataSeeder.SeedAsync(context, userManager);
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 app.UseAuthentication();

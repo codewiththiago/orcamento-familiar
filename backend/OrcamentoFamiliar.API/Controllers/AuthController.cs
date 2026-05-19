@@ -11,7 +11,13 @@ namespace OrcamentoFamiliar.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    public AuthController(IAuthService authService) => _authService = authService;
+    private readonly IWebHostEnvironment _env;
+
+    public AuthController(IAuthService authService, IWebHostEnvironment env)
+    {
+        _authService = authService;
+        _env = env;
+    }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
@@ -116,11 +122,12 @@ public class AuthController : ControllerBase
 
     private void SetRefreshTokenCookie(string token)
     {
+        var isProd = _env.IsProduction();
         Response.Cookies.Append("refreshToken", token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = false, // set to true in production with HTTPS
-            SameSite = SameSiteMode.Lax,
+            Secure = isProd,
+            SameSite = isProd ? SameSiteMode.None : SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddDays(7)
         });
     }
