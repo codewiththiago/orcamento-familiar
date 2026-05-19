@@ -15,6 +15,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Invite> Invites => Set<Invite>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -54,6 +55,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasOne(x => x.User)
              .WithMany(x => x.RefreshTokens)
              .HasForeignKey(x => x.UserId);
+        });
+
+        builder.Entity<Invite>(e =>
+        {
+            e.HasIndex(x => x.Token).IsUnique();
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.Token).HasMaxLength(128);
         });
     }
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrcamentoFamiliar.Application.DTOs.Auth;
@@ -60,6 +61,57 @@ public class AuthController : ControllerBase
 
         Response.Cookies.Delete("refreshToken");
         return Ok(new { message = "Logout realizado com sucesso" });
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    {
+        var result = await _authService.RegisterAsync(dto);
+        if (result == null) return BadRequest(new { message = "Dados inválidos, convite expirado ou e-mail já cadastrado." });
+
+        SetRefreshTokenCookie(result.RefreshToken);
+        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
+    }
+
+    [HttpPost("invite")]
+    [Authorize]
+    public async Task<IActionResult> CreateInvite([FromBody] CreateInviteDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub")!;
+        var invite = await _authService.CreateInviteAsync(dto, userId);
+        return Ok(invite);
+    }
+
+    [HttpGet("invite/{token}")]
+    public async Task<IActionResult> ValidateInvite(string token)
+    {
+        var info = await _authService.ValidateInviteTokenAsync(token);
+        return Ok(info);
+    }
+
+    [HttpDelete("invite/{id:int}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteInvite(int id)
+    {
+        await _authService.DeleteInviteAsync(id);
+        return NoContent();
+    }
+
+    [HttpGet("invites")]
+    [Authorize]
+    public async Task<IActionResult> GetInvites()
+    {
+        var invites = await _authService.GetPendingInvitesAsync();
+        return Ok(invites);
+    }
+
+    [HttpGet("users")]
+    [Authorize]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = await _authService.GetUsersAsync();
+        return Ok(users);
     }
 
     private void SetRefreshTokenCookie(string token)

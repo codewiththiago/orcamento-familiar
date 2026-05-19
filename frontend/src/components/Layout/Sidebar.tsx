@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, LogOut, Wallet } from 'lucide-react'
+import { LayoutDashboard, CreditCard, LogOut, Wallet, Settings } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/cards', icon: CreditCard, label: 'Cartões' },
+  { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
 export default function Sidebar() {
