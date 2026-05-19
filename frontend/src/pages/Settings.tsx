@@ -9,7 +9,7 @@ function copyToClipboard(text: string) {
 }
 
 function inviteLink(token: string) {
-  return `${window.location.origin}/register?token=${token}`
+  return `${window.location.origin}/#/register?token=${token}`
 }
 
 function timeLeft(expiresAt: string) {
