@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OrcamentoFamiliar.Domain.Entities;
 
@@ -6,15 +5,12 @@ namespace OrcamentoFamiliar.Infrastructure.Data;
 
 public static class DataSeeder
 {
-    public static async Task SeedAsync(AppDbContext context, UserManager<ApplicationUser> userManager)
+    public static async Task SeedAsync(AppDbContext context)
     {
-        // EnsureCreated creates schema from the EF model directly (no migration files needed).
-        // For production with migrations, replace with: await context.Database.MigrateAsync();
         await context.Database.MigrateAsync();
 
         await SeedCategoriesAsync(context);
         await SeedCardsAsync(context);
-        await SeedUsersAsync(userManager);
     }
 
     private static async Task SeedCategoriesAsync(AppDbContext context)
@@ -49,25 +45,4 @@ public static class DataSeeder
         await context.SaveChangesAsync();
     }
 
-    private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager)
-    {
-        await CreateUserIfNotExists(userManager, "Usuário 1", "user1@orcamento.com", "User1@123");
-        await CreateUserIfNotExists(userManager, "Usuário 2", "user2@orcamento.com", "User2@123");
-    }
-
-    private static async Task CreateUserIfNotExists(
-        UserManager<ApplicationUser> userManager, string name, string email, string password)
-    {
-        if (await userManager.FindByEmailAsync(email) != null) return;
-
-        var user = new ApplicationUser
-        {
-            Name = name,
-            Email = email,
-            UserName = email,
-            EmailConfirmed = true
-        };
-
-        await userManager.CreateAsync(user, password);
-    }
 }

@@ -92,8 +92,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    await DataSeeder.SeedAsync(context, userManager);
+    await DataSeeder.SeedAsync(context);
 }
 
 app.UseSwagger();
