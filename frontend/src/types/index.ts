@@ -89,16 +89,6 @@ export interface UserInfo {
   email: string
 }
 
-export interface Invite {
-  id: number
-  email: string
-  token: string
-  expiresAt: string
-  createdAt: string
-  isUsed: boolean
-  createdByName: string
-}
-
 export interface CategorySummary {
   categoryId: number
   categoryName: string

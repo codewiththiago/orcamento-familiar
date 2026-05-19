@@ -74,70 +74,6 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
     }
 
-    private string GenerateAccessToken(ApplicationUser user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim("name", user.Name),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(15),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public async Task<InviteDto> CreateInviteAsync(CreateInviteDto dto, string createdByUserId)
-    {
-        var existing = await _context.Invites
-            .FirstOrDefaultAsync(x => x.Email == dto.Email && !x.IsUsed && x.ExpiresAt > DateTime.UtcNow);
-        if (existing != null)
-        {
-            var creatorExisting = await _userManager.FindByIdAsync(existing.CreatedByUserId);
-            return MapInviteDto(existing, creatorExisting?.Name ?? "");
-        }
-
-        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLower();
-        var invite = new Invite
-        {
-            Email = dto.Email.Trim().ToLower(),
-            Token = token,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            IsUsed = false,
-            CreatedByUserId = createdByUserId
-        };
-
-        _context.Invites.Add(invite);
-        await _context.SaveChangesAsync();
-
-        var creator = await _userManager.FindByIdAsync(createdByUserId);
-        return MapInviteDto(invite, creator?.Name ?? "");
-    }
-
-    public async Task<InviteInfoDto> ValidateInviteTokenAsync(string token)
-    {
-        var invite = await _context.Invites
-            .FirstOrDefaultAsync(x => x.Token == token && !x.IsUsed && x.ExpiresAt > DateTime.UtcNow);
-
-        return new InviteInfoDto
-        {
-            Email = invite?.Email ?? "",
-            IsValid = invite != null
-        };
-    }
-
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
     {
         var userCount = await _userManager.Users.CountAsync();
@@ -145,17 +81,15 @@ public class AuthService : IAuthService
 
         if (!isFirstUser)
         {
-            if (string.IsNullOrEmpty(dto.Token))
+            if (string.IsNullOrEmpty(dto.InviteCode) || string.IsNullOrEmpty(dto.Pin))
                 return null;
 
-            var invite = await _context.Invites
-                .FirstOrDefaultAsync(x => x.Token == dto.Token && !x.IsUsed && x.ExpiresAt > DateTime.UtcNow);
+            var access = await _context.FamilyAccess.FirstOrDefaultAsync();
+            if (access == null) return null;
 
-            if (invite == null || !string.Equals(invite.Email, dto.Email.Trim(), StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            invite.IsUsed = true;
-            await _context.SaveChangesAsync();
+            var codeMatch = string.Equals(access.InviteCode, dto.InviteCode.Trim().ToUpper(), StringComparison.Ordinal);
+            var pinMatch = access.Pin == dto.Pin.Trim();
+            if (!codeMatch || !pinMatch) return null;
         }
 
         var existing = await _userManager.FindByEmailAsync(dto.Email);
@@ -183,30 +117,39 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task DeleteInviteAsync(int id)
+    public async Task<RegistrationStatusDto> GetRegistrationStatusAsync()
     {
-        var invite = await _context.Invites.FindAsync(id);
-        if (invite != null)
-        {
-            _context.Invites.Remove(invite);
-            await _context.SaveChangesAsync();
-        }
+        var userCount = await _userManager.Users.CountAsync();
+        return new RegistrationStatusDto { RequiresCode = userCount > 0 };
     }
 
-    public async Task<List<InviteDto>> GetPendingInvitesAsync()
+    public async Task<FamilyCodeDto> GetFamilyCodeAsync()
     {
-        var invites = await _context.Invites
-            .Where(x => !x.IsUsed && x.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync();
-
-        var result = new List<InviteDto>();
-        foreach (var inv in invites)
+        var access = await _context.FamilyAccess.FirstOrDefaultAsync();
+        return new FamilyCodeDto
         {
-            var creator = await _userManager.FindByIdAsync(inv.CreatedByUserId);
-            result.Add(MapInviteDto(inv, creator?.Name ?? ""));
-        }
-        return result;
+            InviteCode = access?.InviteCode ?? "",
+            HasCode = access != null
+        };
+    }
+
+    public async Task<FamilyCodeCreatedDto> RegenerateFamilyCodeAsync()
+    {
+        var existing = await _context.FamilyAccess.ToListAsync();
+        _context.FamilyAccess.RemoveRange(existing);
+
+        var code = GenerateCode();
+        var pin = Random.Shared.Next(1000, 10000).ToString();
+
+        _context.FamilyAccess.Add(new FamilyAccess
+        {
+            InviteCode = code,
+            Pin = pin,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        return new FamilyCodeCreatedDto { InviteCode = code, Pin = pin };
     }
 
     public async Task<List<UserDto>> GetUsersAsync()
@@ -217,16 +160,37 @@ public class AuthService : IAuthService
             .ToListAsync();
     }
 
-    private static InviteDto MapInviteDto(Invite inv, string creatorName) => new()
+    private static string GenerateCode()
     {
-        Id = inv.Id,
-        Email = inv.Email,
-        Token = inv.Token,
-        ExpiresAt = inv.ExpiresAt,
-        CreatedAt = inv.CreatedAt,
-        IsUsed = inv.IsUsed,
-        CreatedByName = creatorName
-    };
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        return new string(Enumerable.Range(0, 6)
+            .Select(_ => chars[Random.Shared.Next(chars.Length)])
+            .ToArray());
+    }
+
+    private string GenerateAccessToken(ApplicationUser user)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+            new Claim("name", user.Name),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(15),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 
     private async Task<string> CreateRefreshTokenAsync(string userId)
     {

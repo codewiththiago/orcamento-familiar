@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Wallet, Loader2, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { validateInvite, register as apiRegister } from '../api/auth'
+import { register as apiRegister, getRegistrationStatus } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 
 interface FormValues {
@@ -11,6 +11,8 @@ interface FormValues {
   email: string
   password: string
   confirmPassword: string
+  inviteCode: string
+  pin: string
 }
 
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
@@ -23,32 +25,23 @@ function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
 }
 
 export default function Register() {
-  const [params] = useSearchParams()
-  const token = params.get('token') ?? ''
   const navigate = useNavigate()
   const { user, loginWithData } = useAuth()
 
-  const [validating, setValidating] = useState(!!token)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [invalidToken, setInvalidToken] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [requiresCode, setRequiresCode] = useState(false)
 
-  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>()
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>()
   const password = watch('password', '')
 
   useEffect(() => {
     if (user) { navigate('/dashboard'); return }
-    if (!token) { setValidating(false); return }
 
-    validateInvite(token).then(info => {
-      if (!info.isValid) {
-        setInvalidToken(true)
-      } else {
-        setInviteEmail(info.email)
-        setValue('email', info.email)
-      }
-      setValidating(false)
-    })
-  }, [token, user])
+    getRegistrationStatus()
+      .then(s => setRequiresCode(s.requiresCode))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [user])
 
   async function onSubmit(values: FormValues) {
     if (values.password !== values.confirmPassword) {
@@ -57,34 +50,24 @@ export default function Register() {
     }
     try {
       const data = await apiRegister({
-        token: token || undefined,
         name: values.name,
         email: values.email,
         password: values.password,
+        inviteCode: requiresCode ? values.inviteCode.toUpperCase() : undefined,
+        pin: requiresCode ? values.pin : undefined,
       })
       loginWithData(data)
       toast.success(`Bem-vindo, ${data.name}!`)
       navigate('/dashboard')
     } catch {
-      toast.error('Erro ao criar conta. Verifique os dados e tente novamente.')
+      toast.error(requiresCode ? 'Código ou PIN inválidos.' : 'Erro ao criar conta. Tente novamente.')
     }
   }
 
-  if (validating) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary">
         <Loader2 size={28} className="animate-spin text-accent" />
-      </div>
-    )
-  }
-
-  if (invalidToken) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
-        <div className="card max-w-sm w-full text-center space-y-4">
-          <p className="text-red-400 font-medium">Convite inválido ou expirado.</p>
-          <button onClick={() => navigate('/login')} className="btn-ghost text-sm">Voltar ao login</button>
-        </div>
       </div>
     )
   }
@@ -103,15 +86,11 @@ export default function Register() {
         </div>
 
         <div className="card">
-          {token ? (
-            <p className="text-xs text-accent bg-accent/10 rounded-lg px-3 py-2 mb-4 text-center">
-              Você foi convidado para {inviteEmail}
-            </p>
-          ) : (
-            <p className="text-xs text-slate-500 bg-bg-tertiary rounded-lg px-3 py-2 mb-4 text-center">
-              Primeiro acesso ao sistema. Preencha seus dados para criar a conta.
-            </p>
-          )}
+          <p className="text-xs text-slate-500 bg-bg-tertiary rounded-lg px-3 py-2 mb-4 text-center">
+            {requiresCode
+              ? 'Peça o código e PIN para um membro da família.'
+              : 'Primeiro acesso — preencha seus dados para criar a conta.'}
+          </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -130,7 +109,6 @@ export default function Register() {
                 className="input"
                 type="email"
                 placeholder="seu@email.com"
-                readOnly={!!inviteEmail}
                 {...register('email', { required: 'E-mail obrigatório' })}
               />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
@@ -172,6 +150,35 @@ export default function Register() {
               />
               {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
             </div>
+
+            {requiresCode && (
+              <div className="border-t border-slate-700/50 pt-4 space-y-3">
+                <p className="text-xs text-slate-400 font-medium">Acesso à família</p>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="label">Código</label>
+                    <input
+                      className="input uppercase tracking-widest"
+                      placeholder="XXXXXX"
+                      maxLength={6}
+                      {...register('inviteCode', { required: 'Código obrigatório' })}
+                    />
+                    {errors.inviteCode && <p className="text-red-400 text-xs mt-1">{errors.inviteCode.message}</p>}
+                  </div>
+                  <div className="w-24">
+                    <label className="label">PIN</label>
+                    <input
+                      className="input tracking-widest"
+                      placeholder="0000"
+                      maxLength={4}
+                      type="password"
+                      {...register('pin', { required: 'PIN obrigatório' })}
+                    />
+                    {errors.pin && <p className="text-red-400 text-xs mt-1">{errors.pin.message}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <button type="submit" disabled={isSubmitting} className="btn-primary w-full mt-2">
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Criar conta'}

@@ -26,14 +26,7 @@ public class AuthController : ControllerBase
         if (result == null) return Unauthorized(new { message = "Email ou senha inválidos" });
 
         SetRefreshTokenCookie(result.RefreshToken);
-
-        return Ok(new
-        {
-            result.AccessToken,
-            result.UserId,
-            result.Name,
-            result.Email
-        });
+        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
     }
 
     [HttpPost("refresh")]
@@ -47,14 +40,7 @@ public class AuthController : ControllerBase
         if (result == null) return Unauthorized(new { message = "Refresh token inválido ou expirado" });
 
         SetRefreshTokenCookie(result.RefreshToken);
-
-        return Ok(new
-        {
-            result.AccessToken,
-            result.UserId,
-            result.Name,
-            result.Email
-        });
+        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
     }
 
     [HttpPost("logout")]
@@ -73,43 +59,33 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
-        if (result == null) return BadRequest(new { message = "Dados inválidos, convite expirado ou e-mail já cadastrado." });
+        if (result == null) return BadRequest(new { message = "Código ou PIN inválidos, ou e-mail já cadastrado." });
 
         SetRefreshTokenCookie(result.RefreshToken);
         return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
     }
 
-    [HttpPost("invite")]
-    [Authorize]
-    public async Task<IActionResult> CreateInvite([FromBody] CreateInviteDto dto)
+    [HttpGet("registration-status")]
+    public async Task<IActionResult> GetRegistrationStatus()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub")!;
-        var invite = await _authService.CreateInviteAsync(dto, userId);
-        return Ok(invite);
+        var status = await _authService.GetRegistrationStatusAsync();
+        return Ok(status);
     }
 
-    [HttpGet("invite/{token}")]
-    public async Task<IActionResult> ValidateInvite(string token)
+    [HttpGet("family-code")]
+    [Authorize]
+    public async Task<IActionResult> GetFamilyCode()
     {
-        var info = await _authService.ValidateInviteTokenAsync(token);
-        return Ok(info);
+        var code = await _authService.GetFamilyCodeAsync();
+        return Ok(code);
     }
 
-    [HttpDelete("invite/{id:int}")]
+    [HttpPost("family-code/regenerate")]
     [Authorize]
-    public async Task<IActionResult> DeleteInvite(int id)
+    public async Task<IActionResult> RegenerateFamilyCode()
     {
-        await _authService.DeleteInviteAsync(id);
-        return NoContent();
-    }
-
-    [HttpGet("invites")]
-    [Authorize]
-    public async Task<IActionResult> GetInvites()
-    {
-        var invites = await _authService.GetPendingInvitesAsync();
-        return Ok(invites);
+        var result = await _authService.RegenerateFamilyCodeAsync();
+        return Ok(result);
     }
 
     [HttpGet("users")]
