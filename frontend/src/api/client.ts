@@ -38,9 +38,7 @@ api.interceptors.response.use(
         return api(original)
       } catch {
         setAccessToken(null)
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
+        window.dispatchEvent(new Event('auth:session-expired'))
       }
     }
     return Promise.reject(error)
