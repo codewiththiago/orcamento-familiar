@@ -23,8 +23,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<MonthlyBudget>(e =>
         {
             e.HasIndex(x => new { x.Year, x.Month }).IsUnique();
-            e.Property(x => x.SalaryThiago).HasPrecision(18, 2);
-            e.Property(x => x.SalaryJuh).HasPrecision(18, 2);
+            e.Property(x => x.Salary1).HasPrecision(18, 2);
+            e.Property(x => x.Salary2).HasPrecision(18, 2);
         });
 
         builder.Entity<ExtraIncome>(e =>

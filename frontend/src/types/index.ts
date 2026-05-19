@@ -61,8 +61,8 @@ export interface MonthlyBudget {
   id: number
   year: number
   month: number
-  salaryThiago: number
-  salaryJuh: number
+  salary1: number
+  salary2: number
   extraIncomes: ExtraIncome[]
   fixedExpenses: FixedExpense[]
   creditCardLaunches: CreditCardLaunch[]

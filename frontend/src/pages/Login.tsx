@@ -80,8 +80,8 @@ export default function Login() {
 
           <div className="mt-4 pt-4 border-t border-slate-700/50">
             <p className="text-xs text-slate-500 text-center">
-              Thiago: thiago@orcamento.com / Thiago@123<br />
-              Juh: juh@orcamento.com / Juh@123
+              user1@orcamento.com / User1@123<br />
+              user2@orcamento.com / User2@123
             </p>
           </div>
         </div>

@@ -51,8 +51,8 @@ public static class DataSeeder
 
     private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager)
     {
-        await CreateUserIfNotExists(userManager, "Thiago", "thiago@orcamento.com", "Thiago@123");
-        await CreateUserIfNotExists(userManager, "Juh", "juh@orcamento.com", "Juh@123");
+        await CreateUserIfNotExists(userManager, "Usuário 1", "user1@orcamento.com", "User1@123");
+        await CreateUserIfNotExists(userManager, "Usuário 2", "user2@orcamento.com", "User2@123");
     }
 
     private static async Task CreateUserIfNotExists(

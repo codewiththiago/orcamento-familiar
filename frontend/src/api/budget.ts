@@ -14,8 +14,8 @@ export async function getMonthlyBudget(year: number, month: number): Promise<Mon
   return data
 }
 
-export async function updateSalary(year: number, month: number, salaryThiago: number, salaryJuh: number) {
-  const { data } = await api.put(`/budget/${year}/${month}/salary`, { salaryThiago, salaryJuh })
+export async function updateSalary(year: number, month: number, salary1: number, salary2: number) {
+  const { data } = await api.put(`/budget/${year}/${month}/salary`, { salary1, salary2 })
   return data as MonthlyBudget
 }
 

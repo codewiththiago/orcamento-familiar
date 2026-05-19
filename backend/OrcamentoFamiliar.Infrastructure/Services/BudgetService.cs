@@ -30,7 +30,7 @@ public class BudgetService : IBudgetService
             if (budget == null)
                 return new MonthSummaryDto { Month = m, MonthName = MonthNames[m - 1] };
 
-            var totalIncome = budget.SalaryThiago + budget.SalaryJuh
+            var totalIncome = budget.Salary1 + budget.Salary2
                 + budget.ExtraIncomes.Sum(e => e.Value);
             var plannedExpense = budget.FixedExpenses.Sum(e => e.PlannedValue)
                 + budget.CreditCardLaunches.Sum(e => e.Value);
@@ -92,8 +92,8 @@ public class BudgetService : IBudgetService
     {
         var budget = await GetBudgetWithIncludes(year, month)
             ?? throw new KeyNotFoundException("Budget not found");
-        budget.SalaryThiago = dto.SalaryThiago;
-        budget.SalaryJuh = dto.SalaryJuh;
+        budget.Salary1 = dto.Salary1;
+        budget.Salary2 = dto.Salary2;
         await _context.SaveChangesAsync();
         return MapToDto(budget);
     }
@@ -282,7 +282,7 @@ public class BudgetService : IBudgetService
     private static MonthlyBudgetDto MapToDto(MonthlyBudget b) => new()
     {
         Id = b.Id, Year = b.Year, Month = b.Month,
-        SalaryThiago = b.SalaryThiago, SalaryJuh = b.SalaryJuh,
+        Salary1 = b.Salary1, Salary2 = b.Salary2,
         ExtraIncomes = b.ExtraIncomes.Select(e => new ExtraIncomeDto { Id = e.Id, MonthlyBudgetId = e.MonthlyBudgetId, Description = e.Description, Value = e.Value }).ToList(),
         FixedExpenses = b.FixedExpenses.Select(e => new FixedExpenseDto
         {

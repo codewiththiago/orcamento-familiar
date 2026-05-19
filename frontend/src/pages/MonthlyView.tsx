@@ -56,8 +56,8 @@ export default function MonthlyView() {
 
   // salary editing
   const [editingSalary, setEditingSalary] = useState(false)
-  const [salThiago, setSalThiago] = useState(0)
-  const [salJuh, setSalJuh] = useState(0)
+  const [sal1, setSal1] = useState(0)
+  const [sal2, setSal2] = useState(0)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['budget', y, m] })
@@ -66,7 +66,7 @@ export default function MonthlyView() {
   }
 
   const salaryMutation = useMutation({
-    mutationFn: () => updateSalary(y, m, salThiago, salJuh),
+    mutationFn: () => updateSalary(y, m, sal1, sal2),
     onSuccess: () => { invalidate(); setEditingSalary(false); toast.success('Salários atualizados') },
     onError: () => toast.error('Erro ao atualizar salários'),
   })
@@ -97,7 +97,7 @@ export default function MonthlyView() {
     )
   }
 
-  const totalIncome = budget.salaryThiago + budget.salaryJuh + budget.extraIncomes.reduce((s, e) => s + e.value, 0)
+  const totalIncome = budget.salary1 + budget.salary2 + budget.extraIncomes.reduce((s, e) => s + e.value, 0)
   const totalPlanned = budget.fixedExpenses.reduce((s, e) => s + e.plannedValue, 0) + budget.creditCardLaunches.reduce((s, l) => s + l.value, 0)
   const totalActual = budget.fixedExpenses.reduce((s, e) => s + e.actualValue, 0) + budget.creditCardLaunches.reduce((s, l) => s + l.value, 0)
   const balancePlanned = totalIncome - totalPlanned
@@ -109,8 +109,8 @@ export default function MonthlyView() {
   )
 
   function startEditSalary() {
-    setSalThiago(budget!.salaryThiago)
-    setSalJuh(budget!.salaryJuh)
+    setSal1(budget!.salary1)
+    setSal2(budget!.salary2)
     setEditingSalary(true)
   }
 
@@ -176,19 +176,19 @@ export default function MonthlyView() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">Thiago</label>
+                <label className="label">Titular</label>
                 {editingSalary ? (
-                  <input type="number" className="input text-sm" value={salThiago} onChange={e => setSalThiago(Number(e.target.value))} step="0.01" />
+                  <input type="number" className="input text-sm" value={sal1} onChange={e => setSal1(Number(e.target.value))} step="0.01" />
                 ) : (
-                  <span className="text-sm font-medium text-green-400">{fmt(budget.salaryThiago)}</span>
+                  <span className="text-sm font-medium text-green-400">{fmt(budget.salary1)}</span>
                 )}
               </div>
               <div>
-                <label className="label">Juh</label>
+                <label className="label">Cônjuge</label>
                 {editingSalary ? (
-                  <input type="number" className="input text-sm" value={salJuh} onChange={e => setSalJuh(Number(e.target.value))} step="0.01" />
+                  <input type="number" className="input text-sm" value={sal2} onChange={e => setSal2(Number(e.target.value))} step="0.01" />
                 ) : (
-                  <span className="text-sm font-medium text-green-400">{fmt(budget.salaryJuh)}</span>
+                  <span className="text-sm font-medium text-green-400">{fmt(budget.salary2)}</span>
                 )}
               </div>
             </div>
