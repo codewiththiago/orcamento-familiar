@@ -1,139 +1,201 @@
+🇧🇷 [Versão em Português](README.pt-BR.md) | 🇺🇸 English
+
 # Orçamento Familiar
 
-Aplicação web de controle de orçamento familiar. Gerencie receitas, despesas fixas, lançamentos de fatura, cartões e acompanhe o orçamento mês a mês com dashboard anual.
+> Family budget management web app — track income, fixed expenses, credit card bills, and monthly balance at a glance.
 
-## Stack
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-22c55e)
 
-- **Backend**: ASP.NET Core 8 Web API (C#) — Clean Architecture
-- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
-- **Banco de dados**: PostgreSQL 16
-- **ORM**: Entity Framework Core 8
-- **Auth**: ASP.NET Core Identity + JWT (access token em memória + refresh token em httpOnly cookie)
-- **Infra**: Docker + Docker Compose
+Orçamento Familiar is a full-stack web application for tracking a family's finances month by month. It supports multiple family members through an invitation system, handles installment purchases with automatic propagation across future months, and allows importing credit card statements directly from PDF files.
 
 ---
 
-## Como rodar
+## Features
 
-### Pré-requisitos
+### Annual Dashboard
+- Table view: Income, Planned Expenses, Actual Expenses, Planned Balance, Actual Balance for every month
+- Bar chart: Income vs Expenses
+- Line chart: Balance trend over the year
+- Year navigation
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e rodando
+### Monthly View
+- **Income** — primary and secondary salaries + extra income with full CRUD
+- **Fixed Expenses** — full CRUD, automatically copied from the previous month
+- **Credit Card Bills** — CRUD with filters by card/category, installment support with automatic propagation to future months, PDF statement import
+- **Category Summary** — table + donut chart breakdown
 
-### Subir com Docker Compose
+### Cards
+- Full CRUD for credit cards
+- Usage tracking: current month spending vs monthly target per card
+
+### Settings & Invitations
+- View active members
+- Manage pending invitations (copy link or revoke)
+- Invite new members by email (7-day single-use links)
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| API | ASP.NET Core 8 (Clean Architecture) | REST API, auth |
+| Auth | ASP.NET Core Identity + JWT | Access token in memory + refresh token in httpOnly cookie |
+| ORM | Entity Framework Core 8 | Database access, migrations |
+| Database | PostgreSQL 16 | Persistent storage |
+| Frontend | React 18 + Vite + TypeScript | SPA |
+| Styling | Tailwind CSS 3 | Utility-first CSS |
+| Infra | Docker + Docker Compose | Container orchestration |
+
+---
+
+## Project Structure
+
+```
+/
+├── backend/
+│   ├── OrcamentoFamiliar.sln
+│   ├── OrcamentoFamiliar.Domain/          # Entities, value objects
+│   ├── OrcamentoFamiliar.Application/     # DTOs, interfaces, use cases
+│   ├── OrcamentoFamiliar.Infrastructure/  # EF Core, DbContext, migrations, services, seeder
+│   └── OrcamentoFamiliar.API/             # Controllers, Program.cs, Dockerfile
+└── frontend/
+    └── src/
+        ├── api/         # Axios clients
+        ├── components/  # Layout, modals (including PDF import)
+        ├── contexts/    # AuthContext
+        ├── hooks/       # Custom React hooks
+        ├── pages/       # Dashboard, MonthlyView, Cards, Login, Register, Settings
+        ├── types/       # TypeScript type definitions
+        └── utils/
+```
+
+---
+
+## Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+---
+
+## Quick Start (Docker Compose)
 
 ```bash
-git clone git@github.com:codewiththiago/orcamento-familiar.git
+git clone https://github.com/codewiththiago/orcamento-familiar.git
 cd orcamento-familiar
 
 docker-compose up --build
 ```
 
-Aguarde o build (~3–5 min na primeira vez). Acesse:
+Wait for the build (~3–5 min on first run). Then access:
 
-| Serviço | URL |
-|---------|-----|
-| Frontend | http://localhost |
-| API | http://localhost:8080 |
-| Swagger | http://localhost:8080/swagger |
+| Service  | URL                            |
+|----------|--------------------------------|
+| Frontend | http://localhost               |
+| API      | http://localhost:8080          |
+| Swagger  | http://localhost:8080/swagger  |
 
-### Primeiro acesso
+### First Access
 
-Na primeira vez, **não há usuários**. Acesse `/register` diretamente para criar a conta inicial — nenhum convite é necessário para o primeiro usuário.
+On the first run there are **no users**. Navigate to `/register` directly to create the initial account — no invitation required for the first user.
 
-A partir daí, novos membros precisam ser convidados via **Configurações → Convidar membro**.
+After that, new members must be invited via **Settings → Invite member**.
 
-> O seeder cria categorias e cartões padrão automaticamente. Nenhum usuário é pré-criado.
-
----
-
-## Sistema de convites
-
-Qualquer membro autenticado pode convidar outros:
-
-1. Acesse **Configurações** no menu lateral
-2. Informe o e-mail da pessoa e clique em **Convidar**
-3. O link é gerado e copiado automaticamente para a área de transferência
-4. Envie o link para a pessoa (WhatsApp, e-mail, etc.)
-5. A pessoa abre o link → preenche nome e senha → entra no sistema
-
-Os convites são válidos por **7 dias** e de uso único.
+> The seeder creates default categories and cards automatically. No users are pre-created.
 
 ---
 
-## Funcionalidades
-
-### Dashboard Anual
-- Tabela com todos os meses: Receita, Despesa Prevista, Despesa Realizada, Saldo Previsto, Saldo Real
-- Gráfico de barras: Receita vs Despesa
-- Gráfico de linha: evolução do Saldo
-- Navegação entre anos
-
-### Visão Mensal
-- **Receitas**: salários (Titular e Cônjuge) + rendas extras com CRUD completo
-- **Despesas Fixas**: CRUD completo, copiadas automaticamente do mês anterior
-- **Lançamentos de Fatura**: CRUD com filtros por cartão/categoria, parcelamentos automáticos com replicação nos meses seguintes, importação via PDF de fatura
-- **Resumo por Categoria**: tabela + gráfico donut
-
-### Cartões
-- CRUD completo
-- Acompanhamento de uso atual vs meta mensal por cartão
-
-### Configurações
-- Lista de membros ativos
-- Convites pendentes (com opção de copiar o link ou revogar)
-- Formulário para convidar novos membros
-
----
-
-## Rodando localmente (sem Docker)
+## Local Development (without Docker)
 
 ### Backend
 
-Pré-requisitos: .NET 8 SDK e PostgreSQL rodando localmente.
+Prerequisites: .NET 8 SDK and a running PostgreSQL instance.
 
 ```bash
 cd backend
 
-# Restaurar pacotes
+# Restore packages
 dotnet restore OrcamentoFamiliar.sln
 
-# A connection string padrão é:
+# Default connection string:
 # Host=localhost;Port=5432;Database=orcamento_familiar;Username=postgres;Password=postgres
-# Edite backend/OrcamentoFamiliar.API/appsettings.Development.json se necessário
+# Edit backend/OrcamentoFamiliar.API/appsettings.Development.json if needed
 
-# Rodar a API (migrations e seed são aplicados automaticamente na inicialização)
+# Start the API (migrations and seed are applied automatically on startup)
 cd OrcamentoFamiliar.API
 dotnet run
-# API disponível em http://localhost:8080
+# API available at: http://localhost:8080
 ```
 
 ### Frontend
 
-Pré-requisito: Node.js 20+
+Prerequisites: Node.js 20+
 
 ```bash
 cd frontend
 
 npm install
 
-# Copiar o arquivo de variáveis de ambiente
+# Copy the environment file
 cp .env.example .env.local
 # VITE_API_URL=http://localhost:8080/api
 
 npm run dev
-# Abre em http://localhost:5173
+# Available at: http://localhost:5173
 ```
+
+---
+
+## Environment Variables
+
+### Backend
+
+| Variable | Description |
+|----------|-------------|
+| `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `Jwt__Key` | Secret key — random string, minimum 32 characters |
+| `Jwt__Issuer` | `OrcamentoFamiliar` |
+| `Jwt__Audience` | `OrcamentoFamiliarUsers` |
+| `Frontend__Url` | Frontend URL (for CORS) |
+| `ASPNETCORE_URLS` | `http://+:8080` |
+
+### Frontend
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API URL (e.g. `http://localhost:8080/api`) |
+
+---
+
+## Invitation System
+
+Any authenticated member can invite others:
+
+1. Go to **Settings** in the sidebar
+2. Enter the person's email and click **Invite**
+3. The invitation link is generated and copied to clipboard automatically
+4. Send the link via WhatsApp, email, etc.
+5. The recipient opens the link → fills in name and password → enters the system
+
+Invitations are valid for **7 days** and can only be used once.
 
 ---
 
 ## Migrations
 
-As migrations são aplicadas automaticamente ao iniciar o backend. Para criar uma nova migration manualmente:
+Migrations are applied automatically when the backend starts. To create a new migration manually:
 
 ```bash
 cd backend/OrcamentoFamiliar.API
 
-dotnet ef migrations add NomeDaMigration \
+dotnet ef migrations add MigrationName \
   --project ../OrcamentoFamiliar.Infrastructure \
   --startup-project .
 
@@ -144,57 +206,34 @@ dotnet ef database update \
 
 ---
 
-## Estrutura do projeto
-
-```
-/
-├── backend/
-│   ├── OrcamentoFamiliar.sln
-│   ├── OrcamentoFamiliar.Domain/          # Entidades
-│   ├── OrcamentoFamiliar.Application/     # DTOs, Interfaces
-│   ├── OrcamentoFamiliar.Infrastructure/  # EF Core, DbContext, Migrations, Services, Seeder
-│   └── OrcamentoFamiliar.API/             # Controllers, Program.cs, Dockerfile
-├── frontend/
-│   └── src/
-│       ├── api/         # Clientes Axios
-│       ├── components/  # Layout, modals (incluindo importação de PDF)
-│       ├── contexts/    # AuthContext
-│       ├── pages/       # Dashboard, MonthlyView, Cards, Login, Register, Settings
-│       └── types/       # Tipos TypeScript
-├── docker-compose.yml
-└── README.md
-```
-
----
-
 ## Deploy
 
 ### Railway
 
-1. Crie um projeto no [Railway](https://railway.app) e adicione um serviço PostgreSQL
-2. Adicione dois serviços de Deploy apontando para o repositório
+1. Create a project on [Railway](https://railway.app) and add a PostgreSQL service
+2. Add two Deploy services pointing to this repository
 
 **Backend**
 - Root Directory: `backend`
 - Dockerfile: `OrcamentoFamiliar.API/Dockerfile`
-- Variáveis de ambiente:
+- Environment variables:
   ```
-  ConnectionStrings__DefaultConnection=<URL do PostgreSQL>
-  Jwt__Key=<chave secreta longa e aleatória>
+  ConnectionStrings__DefaultConnection=<PostgreSQL URL>
+  Jwt__Key=<long random secret>
   Jwt__Issuer=OrcamentoFamiliar
   Jwt__Audience=OrcamentoFamiliarUsers
-  Frontend__Url=<URL do frontend>
+  Frontend__Url=<frontend URL>
   ASPNETCORE_URLS=http://+:8080
   ```
 
 **Frontend**
 - Root Directory: `frontend`
 - Dockerfile: `frontend/Dockerfile`
-- Variáveis de ambiente:
+- Environment variables:
   ```
-  VITE_API_URL=<URL do backend>/api
+  VITE_API_URL=<backend URL>/api
   ```
-  > `VITE_API_URL` é injetada em build-time pelo Vite. Após definir a variável, faça um redeploy.
+  > `VITE_API_URL` is injected at build time by Vite. After setting the variable, trigger a redeploy.
 
 ### Render
 
@@ -202,10 +241,26 @@ dotnet ef database update \
 - Root: `backend`
 - Build: `dotnet publish OrcamentoFamiliar.API/OrcamentoFamiliar.API.csproj -c Release -o out`
 - Start: `dotnet out/OrcamentoFamiliar.API.dll`
-- Variáveis: as mesmas do Railway acima
+- Environment variables: same as Railway above
 
 **Frontend** — New Static Site
 - Root: `frontend`
 - Build: `npm install && npm run build`
 - Publish directory: `dist`
 - Rewrite rule: `/* → /index.html`
+
+---
+
+## Roadmap
+
+- [ ] Mobile-responsive layout improvements
+- [ ] Annual expense forecasts based on historical data
+- [ ] Export budget summary to PDF / Excel
+- [ ] Support for multiple currencies
+- [ ] Savings goals tracking
+
+---
+
+## License
+
+MIT © [codewiththiago](https://github.com/codewiththiago)
