@@ -182,7 +182,7 @@ public class BudgetService : IBudgetService
                 MonthlyBudgetId = targetBudget.Id,
                 Description = dto.Description,
                 CardId = dto.CardId,
-                Date = dto.Date,
+                Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc),
                 CategoryId = dto.CategoryId,
                 CurrentInstallment = i,
                 TotalInstallments = dto.TotalInstallments,
@@ -211,7 +211,7 @@ public class BudgetService : IBudgetService
 
         entity.Description = dto.Description;
         entity.CardId = dto.CardId;
-        entity.Date = dto.Date;
+        entity.Date = DateTime.SpecifyKind(dto.Date, DateTimeKind.Utc);
         entity.CategoryId = dto.CategoryId;
         entity.Value = dto.Value;
         entity.Observation = dto.Observation;

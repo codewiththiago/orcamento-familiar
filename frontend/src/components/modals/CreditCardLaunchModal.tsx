@@ -27,7 +27,7 @@ export default function CreditCardLaunchModal({ item, cards, categories, onClose
     defaultValues: {
       description: item?.description ?? '',
       cardId: item?.cardId ?? cards[0]?.id ?? 0,
-      date: item ? format(new Date(item.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      date: item ? item.date.substring(0, 10) : format(new Date(), 'yyyy-MM-dd'),
       categoryId: item?.categoryId ?? categories[0]?.id ?? 0,
       totalInstallments: item?.totalInstallments ?? 1,
       value: item?.value ?? 0,

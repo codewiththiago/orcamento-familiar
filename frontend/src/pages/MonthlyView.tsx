@@ -326,7 +326,7 @@ export default function MonthlyView() {
                 <tr key={l.id} className="border-b border-slate-700/20 hover:bg-bg-tertiary/30 transition-colors">
                   <td className="py-2 px-2 pl-0 text-slate-200">{l.description}</td>
                   <td className="py-2 px-2 text-slate-400 text-xs">{l.cardName}</td>
-                  <td className="py-2 px-2 text-slate-400 text-xs">{new Date(l.date).toLocaleDateString('pt-BR')}</td>
+                  <td className="py-2 px-2 text-slate-400 text-xs">{new Date(l.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                   <td className="py-2 px-2 text-xs"><span className="px-1.5 py-0.5 rounded bg-bg-tertiary text-slate-400">{l.categoryName}</span></td>
                   <td className="py-2 px-2 text-xs text-slate-400">
                     {l.totalInstallments > 1 ? `${l.currentInstallment}/${l.totalInstallments}` : '—'}
