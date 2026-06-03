@@ -48,6 +48,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         {
             e.Property(x => x.Limit).HasPrecision(18, 2);
             e.Property(x => x.MonthlyGoal).HasPrecision(18, 2);
+            e.Property(x => x.MonthlyCredit).HasPrecision(18, 2);
+            e.Property(x => x.InitialBalance).HasPrecision(18, 2);
         });
 
         builder.Entity<RefreshToken>(e =>

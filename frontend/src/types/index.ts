@@ -71,11 +71,17 @@ export interface MonthlyBudget {
 export interface Card {
   id: number
   name: string
+  cardType: 0 | 1  // 0 = credit, 1 = prepaid
   limit?: number
   closingDay: number
   dueDay: number
   monthlyGoal?: number
   currentMonthUsage: number
+  monthlyCredit?: number
+  creditSinceYear?: number
+  creditSinceMonth?: number
+  initialBalance?: number
+  currentBalance?: number
 }
 
 export interface Category {
