@@ -1,11 +1,102 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Users, CheckCircle, Loader2, RefreshCw, Copy, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { Users, CheckCircle, Loader2, RefreshCw, Copy, KeyRound, Eye, EyeOff, Lock } from 'lucide-react'
+import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { getUsers, getFamilyCode, regenerateFamilyCode } from '../api/auth'
+import { getUsers, getFamilyCode, regenerateFamilyCode, changePassword } from '../api/auth'
 
 function copyToClipboard(text: string, label = 'Copiado!') {
   navigator.clipboard.writeText(text).then(() => toast.success(label))
+}
+
+interface PasswordForm {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+function ChangePasswordSection() {
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors } } = useForm<PasswordForm>()
+
+  async function onSubmit(data: PasswordForm) {
+    try {
+      await changePassword(data.currentPassword, data.newPassword)
+      toast.success('Senha alterada com sucesso!')
+      reset()
+    } catch {
+      toast.error('Senha atual incorreta.')
+    }
+  }
+
+  return (
+    <div className="card space-y-4">
+      <div className="flex items-center gap-2">
+        <Lock size={18} className="text-amber-400" />
+        <h2 className="text-base font-semibold text-slate-200">Trocar senha</h2>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        <div>
+          <label className="label">Senha atual</label>
+          <div className="relative">
+            <input
+              {...register('currentPassword', { required: 'Obrigatório' })}
+              type={showCurrent ? 'text' : 'password'}
+              className="input pr-10"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+            <button type="button" onClick={() => setShowCurrent(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          {errors.currentPassword && <p className="text-red-400 text-xs mt-1">{errors.currentPassword.message}</p>}
+        </div>
+
+        <div>
+          <label className="label">Nova senha</label>
+          <div className="relative">
+            <input
+              {...register('newPassword', { required: 'Obrigatório', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
+              type={showNew ? 'text' : 'password'}
+              className="input pr-10"
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+            <button type="button" onClick={() => setShowNew(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          {errors.newPassword && <p className="text-red-400 text-xs mt-1">{errors.newPassword.message}</p>}
+        </div>
+
+        <div>
+          <label className="label">Confirmar nova senha</label>
+          <input
+            {...register('confirmPassword', {
+              required: 'Obrigatório',
+              validate: v => v === watch('newPassword') || 'As senhas não coincidem'
+            })}
+            type={showNew ? 'text' : 'password'}
+            className="input"
+            placeholder="••••••••"
+            autoComplete="new-password"
+          />
+          {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
+        </div>
+
+        <div className="flex justify-end">
+          <button type="submit" disabled={isSubmitting} className="btn-primary">
+            {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : 'Salvar nova senha'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
 }
 
 export default function Settings() {
@@ -124,6 +215,8 @@ export default function Settings() {
           {familyCode?.hasCode ? 'Gerar novo acesso' : 'Gerar acesso'}
         </button>
       </div>
+
+      <ChangePasswordSection />
 
       {/* Members */}
       <div className="card space-y-4">

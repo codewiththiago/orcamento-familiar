@@ -88,6 +88,19 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+        if (userId == null) return Unauthorized();
+
+        var ok = await _authService.ChangePasswordAsync(userId, dto);
+        if (!ok) return BadRequest(new { message = "Senha atual incorreta." });
+        return Ok(new { message = "Senha alterada com sucesso." });
+    }
+
     [HttpGet("users")]
     [Authorize]
     public async Task<IActionResult> GetUsers()

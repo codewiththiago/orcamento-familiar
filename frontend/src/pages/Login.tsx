@@ -87,6 +87,8 @@ export default function Login() {
             </button>
           </div>
         </div>
+
+        <p className="text-center text-xs text-slate-600 mt-6">by Querência Labs</p>
       </div>
     </div>
   )

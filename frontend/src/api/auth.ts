@@ -41,3 +41,7 @@ export async function getUsers(): Promise<UserInfo[]> {
   const { data } = await api.get('/auth/users')
   return data
 }
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.post('/auth/change-password', { currentPassword, newPassword })
+}
