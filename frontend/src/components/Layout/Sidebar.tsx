@@ -51,6 +51,10 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      <div className="hidden sm:block px-4 pb-2 text-center">
+        <span className="text-xs text-slate-600">by Querência Labs</span>
+      </div>
+
       <div className="p-3 border-t border-slate-700/50">
         <div className="hidden sm:flex items-center gap-2 px-2 mb-2">
           <div className="w-6 h-6 rounded-full bg-accent/30 flex items-center justify-center text-xs font-bold text-accent">
