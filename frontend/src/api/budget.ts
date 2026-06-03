@@ -60,7 +60,8 @@ export async function addCreditCardLaunch(payload: {
   monthlyBudgetId: number; description: string; cardId: number; date: string;
   categoryId: number; totalInstallments: number; value: number; observation?: string
 }): Promise<CreditCardLaunch[]> {
-  const { data } = await api.post('/budget/launch', payload)
+  const date = payload.date.length === 10 ? payload.date + 'T00:00:00Z' : payload.date
+  const { data } = await api.post('/budget/launch', { ...payload, date })
   return data
 }
 
@@ -68,7 +69,8 @@ export async function updateCreditCardLaunch(id: number, payload: {
   description: string; cardId: number; date: string;
   categoryId: number; value: number; observation?: string
 }): Promise<CreditCardLaunch> {
-  const { data } = await api.put(`/budget/launch/${id}`, payload)
+  const date = payload.date.length === 10 ? payload.date + 'T00:00:00Z' : payload.date
+  const { data } = await api.put(`/budget/launch/${id}`, { ...payload, date })
   return data
 }
 
