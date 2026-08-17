@@ -45,3 +45,12 @@ export async function getUsers(): Promise<UserInfo[]> {
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   await api.post('/auth/change-password', { currentPassword, newPassword })
 }
+
+export async function resetPassword(payload: {
+  email: string
+  inviteCode: string
+  pin: string
+  newPassword: string
+}): Promise<void> {
+  await api.post('/auth/reset-password', payload)
+}

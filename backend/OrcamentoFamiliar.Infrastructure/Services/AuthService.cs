@@ -171,6 +171,24 @@ public class AuthService : IAuthService
         return result.Succeeded;
     }
 
+    public async Task<bool> ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email.Trim().ToLower());
+        if (user == null) return false;
+
+        var access = await _context.FamilyAccess.FirstOrDefaultAsync();
+        if (access == null) return false;
+
+        var codeMatch = string.Equals(access.InviteCode, dto.InviteCode.Trim().ToUpper(), StringComparison.Ordinal);
+        var pinMatch = access.Pin == dto.Pin.Trim();
+        if (!codeMatch || !pinMatch) return false;
+
+        // Token-based reset keeps Identity's password policy (length, digit, etc.)
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+        return result.Succeeded;
+    }
+
     private static string GenerateCode()
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

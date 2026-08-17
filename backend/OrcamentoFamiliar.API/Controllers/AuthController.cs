@@ -101,6 +101,14 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Senha alterada com sucesso." });
     }
 
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        var ok = await _authService.ResetPasswordAsync(dto);
+        if (!ok) return BadRequest(new { message = "Código ou PIN inválidos, ou e-mail não cadastrado." });
+        return Ok(new { message = "Senha alterada com sucesso." });
+    }
+
     [HttpGet("users")]
     [Authorize]
     public async Task<IActionResult> GetUsers()

@@ -13,4 +13,5 @@ public interface IAuthService
     Task<FamilyCodeDto> GetFamilyCodeAsync();
     Task<FamilyCodeCreatedDto> RegenerateFamilyCodeAsync();
     Task<bool> ChangePasswordAsync(string userId, ChangePasswordDto dto);
+    Task<bool> ResetPasswordAsync(ResetPasswordDto dto);
 }
