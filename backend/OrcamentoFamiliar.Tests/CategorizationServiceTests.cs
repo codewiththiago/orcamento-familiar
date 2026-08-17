@@ -15,7 +15,7 @@ public class CategorizationServiceTests
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, "Combustível");
+        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Combustível");
         var service = new CategorizationService(context, family);
 
         await service.CreateRuleAsync(new CreateCategorizationRuleDto
@@ -38,7 +38,7 @@ var accountId = seeded.AccountId;
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, "Assinaturas");
+        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Assinaturas");
         var service = new CategorizationService(context, family);
 
         await service.CreateRuleAsync(new CreateCategorizationRuleDto
@@ -71,8 +71,8 @@ var accountId = seeded.AccountId;
         await context.SaveChangesAsync();
         var otherAccountId = otherAccount.Id;
 
-        var globalCategory = await TestDbContextFactory.AddCategoryAsync(context, "Geral");
-        var specificCategory = await TestDbContextFactory.AddCategoryAsync(context, "Específica");
+        var globalCategory = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Geral");
+        var specificCategory = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Específica");
         var service = new CategorizationService(context, family);
 
         await service.CreateRuleAsync(new CreateCategorizationRuleDto
@@ -107,8 +107,8 @@ var accountId = seeded.AccountId;
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var lowCategory = await TestDbContextFactory.AddCategoryAsync(context, "Baixa");
-        var highCategory = await TestDbContextFactory.AddCategoryAsync(context, "Alta");
+        var lowCategory = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Baixa");
+        var highCategory = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Alta");
         var service = new CategorizationService(context, family);
 
         await service.CreateRuleAsync(new CreateCategorizationRuleDto
@@ -139,7 +139,7 @@ var accountId = seeded.AccountId;
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, "Serviços");
+        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Serviços");
         var service = new CategorizationService(context, family);
 
         context.Transactions.Add(new Transaction
@@ -170,7 +170,7 @@ var accountId = seeded.AccountId;
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, "Outros");
+        var categoryId = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Outros");
         var service = new CategorizationService(context, family);
 
         await service.CreateRuleAsync(new CreateCategorizationRuleDto

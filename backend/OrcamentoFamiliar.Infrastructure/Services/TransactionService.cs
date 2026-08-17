@@ -79,7 +79,7 @@ public class TransactionService : ITransactionService
 
         if (dto.CategoryId.HasValue)
         {
-            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId.Value);
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId.Value && c.FamilyId == familyId);
             if (!categoryExists)
                 throw new KeyNotFoundException("Categoria não encontrada");
         }
@@ -145,7 +145,7 @@ public class TransactionService : ITransactionService
 
         if (dto.CategoryId.HasValue)
         {
-            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId.Value);
+            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId.Value && c.FamilyId == familyId);
             if (!categoryExists)
                 throw new KeyNotFoundException("Categoria não encontrada");
         }

@@ -5,6 +5,8 @@ namespace OrcamentoFamiliar.Domain.Entities;
 public class Card
 {
     public int Id { get; set; }
+    public Guid FamilyId { get; set; }
+    public Family Family { get; set; } = null!;
     public string Name { get; set; } = string.Empty;
     public CardType CardType { get; set; } = CardType.Credit;
     public decimal? Limit { get; set; }

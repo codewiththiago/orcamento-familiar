@@ -3,6 +3,10 @@ export interface User {
   name: string
   email: string
   accessToken: string
+  familyId?: string
+  familyName?: string
+  familyCode?: string
+  familyPin?: string
 }
 
 export interface MonthSummary {

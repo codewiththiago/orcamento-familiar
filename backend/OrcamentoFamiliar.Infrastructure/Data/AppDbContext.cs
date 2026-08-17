@@ -39,9 +39,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<MonthlyBudget>(e =>
         {
-            e.HasIndex(x => new { x.Year, x.Month }).IsUnique();
+            e.HasIndex(x => new { x.FamilyId, x.Year, x.Month }).IsUnique();
             e.Property(x => x.Salary1).HasPrecision(18, 2);
             e.Property(x => x.Salary2).HasPrecision(18, 2);
+            e.HasOne(x => x.Family)
+             .WithMany()
+             .HasForeignKey(x => x.FamilyId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<ExtraIncome>(e =>
@@ -62,10 +66,24 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Card>(e =>
         {
+            e.HasIndex(x => x.FamilyId);
             e.Property(x => x.Limit).HasPrecision(18, 2);
             e.Property(x => x.MonthlyGoal).HasPrecision(18, 2);
             e.Property(x => x.MonthlyCredit).HasPrecision(18, 2);
             e.Property(x => x.InitialBalance).HasPrecision(18, 2);
+            e.HasOne(x => x.Family)
+             .WithMany()
+             .HasForeignKey(x => x.FamilyId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Category>(e =>
+        {
+            e.HasIndex(x => x.FamilyId);
+            e.HasOne(x => x.Family)
+             .WithMany()
+             .HasForeignKey(x => x.FamilyId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<RefreshToken>(e =>
@@ -79,6 +97,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         {
             e.Property(x => x.InviteCode).HasMaxLength(6);
             e.Property(x => x.Pin).HasMaxLength(4);
+            e.HasIndex(x => x.InviteCode).IsUnique();
+            e.HasIndex(x => x.FamilyId).IsUnique();
+            e.HasOne(x => x.Family)
+             .WithMany()
+             .HasForeignKey(x => x.FamilyId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ---- New financial model ----

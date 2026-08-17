@@ -207,7 +207,7 @@ public class CategorizationService : ICategorizationService
 
     private async Task ValidateAsync(Guid familyId, int? financialAccountId, int categoryId)
     {
-        var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryId);
+        var categoryExists = await _context.Categories.AnyAsync(c => c.Id == categoryId && c.FamilyId == familyId);
         if (!categoryExists)
             throw new KeyNotFoundException("Categoria não encontrada");
 

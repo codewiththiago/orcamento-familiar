@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
         if (result == null) return Unauthorized(new { message = "Email ou senha inválidos" });
 
         SetRefreshTokenCookie(result.RefreshToken);
-        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
+        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email, result.FamilyId, result.FamilyName });
     }
 
     [HttpPost("refresh")]
@@ -40,7 +40,7 @@ public class AuthController : ControllerBase
         if (result == null) return Unauthorized(new { message = "Refresh token inválido ou expirado" });
 
         SetRefreshTokenCookie(result.RefreshToken);
-        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
+        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email, result.FamilyId, result.FamilyName });
     }
 
     [HttpPost("logout")]
@@ -62,7 +62,11 @@ public class AuthController : ControllerBase
         if (result == null) return BadRequest(new { message = "Código ou PIN inválidos, ou e-mail já cadastrado." });
 
         SetRefreshTokenCookie(result.RefreshToken);
-        return Ok(new { result.AccessToken, result.UserId, result.Name, result.Email });
+        return Ok(new
+        {
+            result.AccessToken, result.UserId, result.Name, result.Email,
+            result.FamilyId, result.FamilyName, result.FamilyCode, result.FamilyPin
+        });
     }
 
     [HttpGet("registration-status")]

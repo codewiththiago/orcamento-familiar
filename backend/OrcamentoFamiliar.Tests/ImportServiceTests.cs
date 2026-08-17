@@ -110,7 +110,7 @@ var accountId = seeded.AccountId;
 var context = seeded.Context;
 var family = seeded.Family;
 var accountId = seeded.AccountId;
-        var comboCategory = await TestDbContextFactory.AddCategoryAsync(context, "Combustível");
+        var comboCategory = await TestDbContextFactory.AddCategoryAsync(context, family.FamilyId, "Combustível");
         var categorization = new CategorizationService(context, family);
         await categorization.CreateRuleAsync(new OrcamentoFamiliar.Application.DTOs.CategorizationRules.CreateCategorizationRuleDto
         {

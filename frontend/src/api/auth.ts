@@ -16,13 +16,19 @@ export async function refreshToken(): Promise<User> {
 }
 
 export async function register(payload: {
-  name: string; email: string; password: string; inviteCode?: string; pin?: string
+  name: string
+  email: string
+  password: string
+  familyMode?: 'create' | 'join'
+  familyName?: string
+  inviteCode?: string
+  pin?: string
 }): Promise<User> {
   const { data } = await api.post('/auth/register', payload)
   return data
 }
 
-export async function getRegistrationStatus(): Promise<{ requiresCode: boolean }> {
+export async function getRegistrationStatus(): Promise<{ hasFamilies: boolean }> {
   const { data } = await api.get('/auth/registration-status')
   return data
 }

@@ -18,12 +18,18 @@ public class AuthService : IAuthService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
+    private readonly ICurrentFamily _currentFamily;
 
-    public AuthService(UserManager<ApplicationUser> userManager, AppDbContext context, IConfiguration config)
+    public AuthService(
+        UserManager<ApplicationUser> userManager,
+        AppDbContext context,
+        IConfiguration config,
+        ICurrentFamily currentFamily)
     {
         _userManager = userManager;
         _context = context;
         _config = config;
+        _currentFamily = currentFamily;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto dto)
@@ -33,15 +39,7 @@ public class AuthService : IAuthService
             return null;
 
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
-
-        return new AuthResponseDto
-        {
-            AccessToken = GenerateAccessToken(user),
-            RefreshToken = refreshToken,
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email!
-        };
+        return await BuildResponseAsync(user, refreshToken);
     }
 
     public async Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken)
@@ -56,14 +54,7 @@ public class AuthService : IAuthService
         var newRefreshToken = await CreateRefreshTokenAsync(token.UserId);
         await _context.SaveChangesAsync();
 
-        return new AuthResponseDto
-        {
-            AccessToken = GenerateAccessToken(token.User),
-            RefreshToken = newRefreshToken,
-            UserId = token.User.Id,
-            Name = token.User.Name,
-            Email = token.User.Email!
-        };
+        return await BuildResponseAsync(token.User, newRefreshToken);
     }
 
     public async Task RevokeRefreshTokenAsync(string refreshToken)
@@ -76,26 +67,52 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
     {
-        var userCount = await _userManager.Users.CountAsync();
-        var isFirstUser = userCount == 0;
+        var existing = await _userManager.FindByEmailAsync(dto.Email.Trim().ToLower());
+        if (existing != null) return null;
 
-        if (!isFirstUser)
+        var hasFamilies = await _context.Families.AnyAsync();
+        var mode = dto.FamilyMode?.Trim().ToLowerInvariant();
+
+        Guid familyId;
+        string? newFamilyCode = null;
+        string? newFamilyPin = null;
+
+        if (mode == "join" && hasFamilies)
         {
             if (string.IsNullOrEmpty(dto.InviteCode) || string.IsNullOrEmpty(dto.Pin))
                 return null;
 
-            var access = await _context.FamilyAccess.FirstOrDefaultAsync();
-            if (access == null) return null;
+            var access = await _context.FamilyAccess
+                .FirstOrDefaultAsync(a => a.InviteCode == dto.InviteCode.Trim().ToUpper());
+            if (access == null || access.Pin != dto.Pin.Trim())
+                return null;
 
-            var codeMatch = string.Equals(access.InviteCode, dto.InviteCode.Trim().ToUpper(), StringComparison.Ordinal);
-            var pinMatch = access.Pin == dto.Pin.Trim();
-            if (!codeMatch || !pinMatch) return null;
+            familyId = access.FamilyId;
         }
+        else
+        {
+            // Cria uma nova família (fluxo padrão; forçado quando não há nenhuma)
+            var family = new Family
+            {
+                Id = Guid.NewGuid(),
+                Name = string.IsNullOrWhiteSpace(dto.FamilyName) ? "Minha Família" : dto.FamilyName.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Families.Add(family);
 
-        var existing = await _userManager.FindByEmailAsync(dto.Email);
-        if (existing != null) return null;
+            newFamilyCode = GenerateCode();
+            newFamilyPin = Random.Shared.Next(1000, 10000).ToString();
+            _context.FamilyAccess.Add(new FamilyAccess
+            {
+                FamilyId = family.Id,
+                InviteCode = newFamilyCode,
+                Pin = newFamilyPin,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
 
-        var family = await _context.Families.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
+            familyId = family.Id;
+        }
 
         var user = new ApplicationUser
         {
@@ -103,32 +120,41 @@ public class AuthService : IAuthService
             Email = dto.Email.Trim().ToLower(),
             UserName = dto.Email.Trim().ToLower(),
             EmailConfirmed = true,
-            FamilyId = family?.Id
+            FamilyId = familyId
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded) return null;
 
-        var refreshToken = await CreateRefreshTokenAsync(user.Id);
-        return new AuthResponseDto
+        if (newFamilyCode is not null)
         {
-            AccessToken = GenerateAccessToken(user),
-            RefreshToken = refreshToken,
-            UserId = user.Id,
-            Name = user.Name,
-            Email = user.Email!
-        };
+            var family = await _context.Families.FindAsync(familyId);
+            if (family != null)
+            {
+                family.OwnerUserId = user.Id;
+                await _context.SaveChangesAsync();
+            }
+
+            await FamilyDefaults.EnsureFamilyDefaultsAsync(_context, familyId);
+        }
+
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+        var response = await BuildResponseAsync(user, refreshToken);
+        response.FamilyCode = newFamilyCode;
+        response.FamilyPin = newFamilyPin;
+        return response;
     }
 
     public async Task<RegistrationStatusDto> GetRegistrationStatusAsync()
     {
-        var userCount = await _userManager.Users.CountAsync();
-        return new RegistrationStatusDto { RequiresCode = userCount > 0 };
+        var hasFamilies = await _context.Families.AnyAsync();
+        return new RegistrationStatusDto { HasFamilies = hasFamilies };
     }
 
     public async Task<FamilyCodeDto> GetFamilyCodeAsync()
     {
-        var access = await _context.FamilyAccess.FirstOrDefaultAsync();
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        var access = await _context.FamilyAccess.FirstOrDefaultAsync(a => a.FamilyId == familyId);
         return new FamilyCodeDto
         {
             InviteCode = access?.InviteCode ?? "",
@@ -138,7 +164,9 @@ public class AuthService : IAuthService
 
     public async Task<FamilyCodeCreatedDto> RegenerateFamilyCodeAsync()
     {
-        var existing = await _context.FamilyAccess.ToListAsync();
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+
+        var existing = await _context.FamilyAccess.Where(a => a.FamilyId == familyId).ToListAsync();
         _context.FamilyAccess.RemoveRange(existing);
 
         var code = GenerateCode();
@@ -146,6 +174,7 @@ public class AuthService : IAuthService
 
         _context.FamilyAccess.Add(new FamilyAccess
         {
+            FamilyId = familyId,
             InviteCode = code,
             Pin = pin,
             CreatedAt = DateTime.UtcNow
@@ -157,7 +186,10 @@ public class AuthService : IAuthService
 
     public async Task<List<UserDto>> GetUsersAsync()
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+
         return await _userManager.Users
+            .Where(u => u.FamilyId == familyId)
             .OrderBy(u => u.Name)
             .Select(u => new UserDto { Id = u.Id, Name = u.Name, Email = u.Email! })
             .ToListAsync();
@@ -176,17 +208,42 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(dto.Email.Trim().ToLower());
         if (user == null) return false;
 
-        var access = await _context.FamilyAccess.FirstOrDefaultAsync();
-        if (access == null) return false;
+        var access = await _context.FamilyAccess
+            .FirstOrDefaultAsync(a => a.InviteCode == dto.InviteCode.Trim().ToUpper());
+        if (access == null || access.Pin != dto.Pin.Trim())
+            return false;
 
-        var codeMatch = string.Equals(access.InviteCode, dto.InviteCode.Trim().ToUpper(), StringComparison.Ordinal);
-        var pinMatch = access.Pin == dto.Pin.Trim();
-        if (!codeMatch || !pinMatch) return false;
+        // O código deve pertencer à família do usuário
+        if (user.FamilyId.HasValue && access.FamilyId != user.FamilyId.Value)
+            return false;
 
-        // Token-based reset keeps Identity's password policy (length, digit, etc.)
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
         return result.Succeeded;
+    }
+
+    private async Task<AuthResponseDto> BuildResponseAsync(ApplicationUser user, string refreshToken)
+    {
+        var familyName = "";
+        if (user.FamilyId.HasValue)
+        {
+            var family = await _context.Families.AsNoTracking()
+                .Where(f => f.Id == user.FamilyId.Value)
+                .Select(f => f.Name)
+                .FirstOrDefaultAsync();
+            familyName = family ?? "";
+        }
+
+        return new AuthResponseDto
+        {
+            AccessToken = GenerateAccessToken(user),
+            RefreshToken = refreshToken,
+            UserId = user.Id,
+            Name = user.Name,
+            Email = user.Email!,
+            FamilyId = user.FamilyId,
+            FamilyName = familyName
+        };
     }
 
     private static string GenerateCode()

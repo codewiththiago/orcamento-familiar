@@ -44,7 +44,7 @@ public class InsightsService : IInsightsService
             .Include(b => b.ExtraIncomes)
             .Include(b => b.FixedExpenses)
             .Include(b => b.CreditCardLaunches)
-            .FirstOrDefaultAsync(b => b.Year == year && b.Month == month);
+            .FirstOrDefaultAsync(b => b.FamilyId == familyId && b.Year == year && b.Month == month);
 
         var incomeTransactions = transactions
             .Where(t => t.Type == TransactionType.Income)
@@ -134,7 +134,7 @@ public class InsightsService : IInsightsService
             .AsNoTracking()
             .Include(b => b.FixedExpenses)
             .Include(b => b.CreditCardLaunches)
-            .Where(b => b.Year >= startYear && b.Year <= end.AddMonths(-1).Year)
+            .Where(b => b.FamilyId == familyId && b.Year >= startYear && b.Year <= end.AddMonths(-1).Year)
             .ToListAsync();
 
         var installmentTransactions = await _context.Transactions

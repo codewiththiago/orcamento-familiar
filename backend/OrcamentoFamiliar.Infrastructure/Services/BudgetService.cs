@@ -9,19 +9,26 @@ namespace OrcamentoFamiliar.Infrastructure.Services;
 public class BudgetService : IBudgetService
 {
     private readonly AppDbContext _context;
+    private readonly ICurrentFamily _currentFamily;
     private static readonly string[] MonthNames =
         ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
          "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-    public BudgetService(AppDbContext context) => _context = context;
+    public BudgetService(AppDbContext context, ICurrentFamily currentFamily)
+    {
+        _context = context;
+        _currentFamily = currentFamily;
+    }
 
     public async Task<DashboardDto> GetDashboardAsync(int year)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+
         var budgets = await _context.MonthlyBudgets
             .Include(b => b.ExtraIncomes)
             .Include(b => b.FixedExpenses)
             .Include(b => b.CreditCardLaunches)
-            .Where(b => b.Year == year)
+            .Where(b => b.FamilyId == familyId && b.Year == year)
             .ToListAsync();
 
         var months = Enumerable.Range(1, 12).Select(m =>
@@ -55,15 +62,16 @@ public class BudgetService : IBudgetService
 
     public async Task<MonthlyBudgetDto> GetOrCreateMonthlyBudgetAsync(int year, int month)
     {
-        var budget = await GetBudgetWithIncludes(year, month);
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        var budget = await GetFamilyBudgetAsync(familyId, year, month);
 
         if (budget == null)
         {
-            budget = new MonthlyBudget { Year = year, Month = month };
+            budget = new MonthlyBudget { FamilyId = familyId, Year = year, Month = month };
 
             var prevMonth = month == 1 ? 12 : month - 1;
             var prevYear = month == 1 ? year - 1 : year;
-            var prevBudget = await GetBudgetWithIncludes(prevYear, prevMonth);
+            var prevBudget = await GetFamilyBudgetAsync(familyId, prevYear, prevMonth);
 
             if (prevBudget != null)
             {
@@ -82,7 +90,7 @@ public class BudgetService : IBudgetService
 
             _context.MonthlyBudgets.Add(budget);
             await _context.SaveChangesAsync();
-            budget = await GetBudgetWithIncludes(year, month);
+            budget = await GetFamilyBudgetAsync(familyId, year, month);
         }
 
         return MapToDto(budget!);
@@ -90,7 +98,8 @@ public class BudgetService : IBudgetService
 
     public async Task<MonthlyBudgetDto> UpdateSalaryAsync(int year, int month, UpdateSalaryDto dto)
     {
-        var budget = await GetBudgetWithIncludes(year, month)
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        var budget = await GetFamilyBudgetAsync(familyId, year, month)
             ?? throw new KeyNotFoundException("Budget not found");
         budget.Salary1 = dto.Salary1;
         budget.Salary2 = dto.Salary2;
@@ -100,6 +109,9 @@ public class BudgetService : IBudgetService
 
     public async Task<ExtraIncomeDto> AddExtraIncomeAsync(CreateExtraIncomeDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        await EnsureFamilyBudgetAsync(familyId, dto.MonthlyBudgetId);
+
         var entity = new ExtraIncome { MonthlyBudgetId = dto.MonthlyBudgetId, Description = dto.Description, Value = dto.Value };
         _context.ExtraIncomes.Add(entity);
         await _context.SaveChangesAsync();
@@ -108,7 +120,10 @@ public class BudgetService : IBudgetService
 
     public async Task<ExtraIncomeDto> UpdateExtraIncomeAsync(int id, UpdateExtraIncomeDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.ExtraIncomes.FindAsync(id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
+
         entity.Description = dto.Description;
         entity.Value = dto.Value;
         await _context.SaveChangesAsync();
@@ -117,13 +132,19 @@ public class BudgetService : IBudgetService
 
     public async Task DeleteExtraIncomeAsync(int id)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.ExtraIncomes.FindAsync(id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
         _context.ExtraIncomes.Remove(entity);
         await _context.SaveChangesAsync();
     }
 
     public async Task<FixedExpenseDto> AddFixedExpenseAsync(CreateFixedExpenseDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        await EnsureFamilyBudgetAsync(familyId, dto.MonthlyBudgetId);
+        await EnsureFamilyCategoryAsync(familyId, dto.CategoryId);
+
         var entity = new FixedExpense
         {
             MonthlyBudgetId = dto.MonthlyBudgetId, Name = dto.Name,
@@ -137,7 +158,11 @@ public class BudgetService : IBudgetService
 
     public async Task<FixedExpenseDto> UpdateFixedExpenseAsync(int id, UpdateFixedExpenseDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.FixedExpenses.FindAsync(id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
+        await EnsureFamilyCategoryAsync(familyId, dto.CategoryId);
+
         entity.Name = dto.Name;
         entity.InstallmentType = dto.InstallmentType;
         entity.PlannedValue = dto.PlannedValue;
@@ -149,17 +174,21 @@ public class BudgetService : IBudgetService
 
     public async Task DeleteFixedExpenseAsync(int id)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.FixedExpenses.FindAsync(id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
         _context.FixedExpenses.Remove(entity);
         await _context.SaveChangesAsync();
     }
 
     public async Task<List<CreditCardLaunchDto>> AddCreditCardLaunchAsync(CreateCreditCardLaunchDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var groupId = dto.TotalInstallments > 1 ? Guid.NewGuid() : (Guid?)null;
 
-        var budget = await _context.MonthlyBudgets.FirstOrDefaultAsync(b => b.Id == dto.MonthlyBudgetId)
+        var budget = await GetFamilyBudgetAsync(familyId, dto.MonthlyBudgetId)
             ?? throw new KeyNotFoundException("Budget not found");
+        await EnsureFamilyCategoryAsync(familyId, dto.CategoryId);
 
         for (int i = 1; i <= dto.TotalInstallments; i++)
         {
@@ -168,11 +197,11 @@ public class BudgetService : IBudgetService
             while (targetMonth > 12) { targetMonth -= 12; targetYear++; }
 
             var targetBudget = i == 1 ? budget
-                : await _context.MonthlyBudgets.FirstOrDefaultAsync(b => b.Year == targetYear && b.Month == targetMonth);
+                : await GetFamilyBudgetAsync(familyId, targetYear, targetMonth);
 
             if (targetBudget == null)
             {
-                targetBudget = new MonthlyBudget { Year = targetYear, Month = targetMonth };
+                targetBudget = new MonthlyBudget { FamilyId = familyId, Year = targetYear, Month = targetMonth };
                 _context.MonthlyBudgets.Add(targetBudget);
                 await _context.SaveChangesAsync();
             }
@@ -205,9 +234,12 @@ public class BudgetService : IBudgetService
 
     public async Task<CreditCardLaunchDto> UpdateCreditCardLaunchAsync(int id, UpdateCreditCardLaunchDto dto)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.CreditCardLaunches
             .Include(x => x.Card).Include(x => x.Category)
             .FirstOrDefaultAsync(x => x.Id == id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
+        await EnsureFamilyCategoryAsync(familyId, dto.CategoryId);
 
         entity.Description = dto.Description;
         entity.CardId = dto.CardId;
@@ -224,7 +256,9 @@ public class BudgetService : IBudgetService
 
     public async Task DeleteCreditCardLaunchAsync(int id, bool deleteAll = false)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
         var entity = await _context.CreditCardLaunches.FindAsync(id) ?? throw new KeyNotFoundException();
+        await EnsureFamilyBudgetAsync(familyId, entity.MonthlyBudgetId);
 
         if (deleteAll && entity.GroupId.HasValue)
         {
@@ -243,6 +277,9 @@ public class BudgetService : IBudgetService
 
     public async Task<List<CategorySummaryDto>> GetCategorySummaryAsync(int budgetId)
     {
+        var familyId = await _currentFamily.GetFamilyIdAsync();
+        await EnsureFamilyBudgetAsync(familyId, budgetId);
+
         var fixedByCategory = await _context.FixedExpenses
             .Include(x => x.Category)
             .Where(x => x.MonthlyBudgetId == budgetId)
@@ -271,13 +308,33 @@ public class BudgetService : IBudgetService
             .ToList();
     }
 
-    private async Task<MonthlyBudget?> GetBudgetWithIncludes(int year, int month) =>
+    private async Task<MonthlyBudget?> GetFamilyBudgetAsync(Guid familyId, int budgetId) =>
         await _context.MonthlyBudgets
             .Include(b => b.ExtraIncomes)
             .Include(b => b.FixedExpenses).ThenInclude(f => f.Category)
             .Include(b => b.CreditCardLaunches).ThenInclude(c => c.Card)
             .Include(b => b.CreditCardLaunches).ThenInclude(c => c.Category)
-            .FirstOrDefaultAsync(b => b.Year == year && b.Month == month);
+            .FirstOrDefaultAsync(b => b.Id == budgetId && b.FamilyId == familyId);
+
+    private async Task<MonthlyBudget?> GetFamilyBudgetAsync(Guid familyId, int year, int month) =>
+        await _context.MonthlyBudgets
+            .Include(b => b.ExtraIncomes)
+            .Include(b => b.FixedExpenses).ThenInclude(f => f.Category)
+            .Include(b => b.CreditCardLaunches).ThenInclude(c => c.Card)
+            .Include(b => b.CreditCardLaunches).ThenInclude(c => c.Category)
+            .FirstOrDefaultAsync(b => b.FamilyId == familyId && b.Year == year && b.Month == month);
+
+    private async Task EnsureFamilyBudgetAsync(Guid familyId, int budgetId)
+    {
+        var exists = await _context.MonthlyBudgets.AnyAsync(b => b.Id == budgetId && b.FamilyId == familyId);
+        if (!exists) throw new KeyNotFoundException("Budget not found");
+    }
+
+    private async Task EnsureFamilyCategoryAsync(Guid familyId, int categoryId)
+    {
+        var exists = await _context.Categories.AnyAsync(c => c.Id == categoryId && c.FamilyId == familyId);
+        if (!exists) throw new KeyNotFoundException("Categoria não encontrada");
+    }
 
     private static MonthlyBudgetDto MapToDto(MonthlyBudget b) => new()
     {

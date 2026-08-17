@@ -5,6 +5,10 @@ public class RegisterDto
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+
+    /// "create" cria uma nova família; "join" entra numa existente via código+PIN.
+    public string? FamilyMode { get; set; }
+    public string? FamilyName { get; set; }
     public string? InviteCode { get; set; }
     public string? Pin { get; set; }
 }
@@ -30,5 +34,5 @@ public class FamilyCodeCreatedDto
 
 public class RegistrationStatusDto
 {
-    public bool RequiresCode { get; set; }
+    public bool HasFamilies { get; set; }
 }

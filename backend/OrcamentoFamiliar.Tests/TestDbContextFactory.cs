@@ -44,9 +44,9 @@ public static class TestDbContextFactory
         return new SeededContext { Context = context, Family = family, AccountId = account.Id };
     }
 
-    public static async Task<int> AddCategoryAsync(AppDbContext context, string name)
+    public static async Task<int> AddCategoryAsync(AppDbContext context, Guid familyId, string name)
     {
-        var category = new Domain.Entities.Category { Name = name };
+        var category = new Domain.Entities.Category { FamilyId = familyId, Name = name };
         context.Categories.Add(category);
         await context.SaveChangesAsync();
         return category.Id;

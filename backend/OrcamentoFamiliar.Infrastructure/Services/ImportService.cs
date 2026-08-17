@@ -46,6 +46,7 @@ public class ImportService : IImportService
 
         var categoryNames = await _context.Categories
             .AsNoTracking()
+            .Where(c => c.FamilyId == familyId)
             .ToDictionaryAsync(c => c.Id, c => c.Name);
 
         var dtoItems = parsed.Select(p =>
@@ -119,7 +120,10 @@ public class ImportService : IImportService
             .ToListAsync();
         var hashSet = existingHashes.ToHashSet(StringComparer.Ordinal);
 
-        var categories = await _context.Categories.AsNoTracking().Select(c => c.Id).ToListAsync();
+        var categories = await _context.Categories.AsNoTracking()
+            .Where(c => c.FamilyId == familyId)
+            .Select(c => c.Id)
+            .ToListAsync();
         var validCategoryIds = categories.ToHashSet();
 
         var toCreate = items.Where(x => !hashSet.Contains(x.Hash)).ToList();

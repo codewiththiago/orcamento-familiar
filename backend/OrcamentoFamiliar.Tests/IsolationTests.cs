@@ -77,7 +77,7 @@ var accountB = seededB.AccountId;
 var contextA = seededA.Context;
 var familyA = seededA.Family;
 var accountA = seededA.AccountId;
-        var categoryA = await TestDbContextFactory.AddCategoryAsync(contextA, "Cat A");
+        var categoryA = await TestDbContextFactory.AddCategoryAsync(contextA, familyA.FamilyId, "Cat A");
         contextA.Dispose();
 
         var seededB = await TestDbContextFactory.CreateSeededAsync($"iso_f_{Guid.NewGuid():N}");
@@ -94,6 +94,46 @@ var accountB = seededB.AccountId;
         }));
 
         contextB.Dispose();
+    }
+
+    [Fact]
+    public async Task SameContext_DifferentFamilies_BudgetsAreIsolated()
+    {
+        var dbName = $"iso_budget_{Guid.NewGuid():N}";
+        var context = TestDbContextFactory.Create(dbName);
+
+        var familyA = new TestFamily { FamilyId = Guid.NewGuid() };
+        var familyB = new TestFamily { FamilyId = Guid.NewGuid() };
+        context.Families.AddRange(
+            new Family { Id = familyA.FamilyId, Name = "A" },
+            new Family { Id = familyB.FamilyId, Name = "B" });
+        await context.SaveChangesAsync();
+
+        var serviceA = new BudgetService(context, familyA);
+        var serviceB = new BudgetService(context, familyB);
+
+        var budgetA = await serviceA.GetOrCreateMonthlyBudgetAsync(2026, 8);
+        var budgetB = await serviceB.GetOrCreateMonthlyBudgetAsync(2026, 8);
+
+        Assert.NotEqual(budgetA.Id, budgetB.Id);
+
+        await serviceA.UpdateSalaryAsync(2026, 8, new OrcamentoFamiliar.Application.DTOs.Budget.UpdateSalaryDto { Salary1 = 5000 });
+
+        var budgetAAfter = await serviceA.GetOrCreateMonthlyBudgetAsync(2026, 8);
+        var budgetBAfter = await serviceB.GetOrCreateMonthlyBudgetAsync(2026, 8);
+        Assert.Equal(5000m, budgetAAfter.Salary1);
+        Assert.Equal(0m, budgetBAfter.Salary1);
+
+        // Family B cannot add an income to family A's budget
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => serviceB.AddExtraIncomeAsync(
+            new OrcamentoFamiliar.Application.DTOs.Budget.CreateExtraIncomeDto
+            {
+                MonthlyBudgetId = budgetA.Id,
+                Description = "X",
+                Value = 1
+            }));
+
+        context.Dispose();
     }
 
     [Fact]

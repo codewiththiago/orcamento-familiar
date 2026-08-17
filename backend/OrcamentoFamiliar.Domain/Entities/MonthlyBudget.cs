@@ -3,6 +3,8 @@ namespace OrcamentoFamiliar.Domain.Entities;
 public class MonthlyBudget
 {
     public int Id { get; set; }
+    public Guid FamilyId { get; set; }
+    public Family Family { get; set; } = null!;
     public int Year { get; set; }
     public int Month { get; set; }
     public decimal Salary1 { get; set; }
