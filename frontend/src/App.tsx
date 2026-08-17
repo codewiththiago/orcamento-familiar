@@ -6,6 +6,11 @@ import Dashboard from './pages/Dashboard'
 import MonthlyView from './pages/MonthlyView'
 import Cards from './pages/Cards'
 import Settings from './pages/Settings'
+import Accounts from './pages/Accounts'
+import Transactions from './pages/Transactions'
+import Imports from './pages/Imports'
+import CategorizationRules from './pages/CategorizationRules'
+import FutureCommitments from './pages/FutureCommitments'
 import AppLayout from './components/Layout/AppLayout'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,6 +37,11 @@ function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="budget/:year/:month" element={<MonthlyView />} />
         <Route path="cards" element={<Cards />} />
+        <Route path="accounts" element={<Accounts />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="imports" element={<Imports />} />
+        <Route path="rules" element={<CategorizationRules />} />
+        <Route path="commitments" element={<FutureCommitments />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

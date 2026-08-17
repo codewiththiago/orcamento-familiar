@@ -1,16 +1,23 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, CreditCard, LogOut, Wallet, Settings } from 'lucide-react'
+import { LayoutDashboard, CreditCard, LogOut, Wallet, Settings, ArrowLeftRight, FileUp, Tag, CalendarClock, Smartphone } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useInstallPrompt } from '../../hooks/useInstallPrompt'
 import toast from 'react-hot-toast'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/accounts', icon: Wallet, label: 'Contas' },
+  { to: '/transactions', icon: ArrowLeftRight, label: 'Transações' },
+  { to: '/imports', icon: FileUp, label: 'Importar' },
   { to: '/cards', icon: CreditCard, label: 'Cartões' },
+  { to: '/rules', icon: Tag, label: 'Regras' },
+  { to: '/commitments', icon: CalendarClock, label: 'Compromissos' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const { canInstall, promptInstall } = useInstallPrompt()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -49,6 +56,16 @@ export default function Sidebar() {
             <span className="hidden sm:block">{label}</span>
           </NavLink>
         ))}
+
+        {canInstall && (
+          <button
+            onClick={promptInstall}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-accent bg-accent/10 hover:bg-accent/20 transition-all"
+          >
+            <Smartphone size={18} className="shrink-0" />
+            <span className="hidden sm:block">Instalar app</span>
+          </button>
+        )}
       </nav>
 
       <div className="hidden sm:block px-4 pb-2 text-center">

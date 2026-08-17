@@ -95,12 +95,15 @@ public class AuthService : IAuthService
         var existing = await _userManager.FindByEmailAsync(dto.Email);
         if (existing != null) return null;
 
+        var family = await _context.Families.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
+
         var user = new ApplicationUser
         {
             Name = dto.Name.Trim(),
             Email = dto.Email.Trim().ToLower(),
             UserName = dto.Email.Trim().ToLower(),
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            FamilyId = family?.Id
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
@@ -181,13 +184,16 @@ public class AuthService : IAuthService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-            new Claim("name", user.Name),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email!),
+            new("name", user.Name),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (user.FamilyId.HasValue)
+            claims.Add(new Claim("familyId", user.FamilyId.Value.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],

@@ -2,8 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
+import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import './index.css'
+
+registerSW({ immediate: true })
 
 const queryClient = new QueryClient({
   defaultOptions: {

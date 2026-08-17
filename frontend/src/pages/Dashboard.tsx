@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet, CreditCard, Tag } from 'lucide-react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import { getDashboard } from '../api/budget'
+import { getMonthlyInsights } from '../api/insights'
 import { fmt } from '../utils/format'
 import type { MonthSummary } from '../types'
 
@@ -34,6 +35,12 @@ export default function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', year],
     queryFn: () => getDashboard(year),
+  })
+
+  const now = new Date()
+  const { data: insights } = useQuery({
+    queryKey: ['insights', now.getFullYear(), now.getMonth() + 1],
+    queryFn: () => getMonthlyInsights(now.getFullYear(), now.getMonth() + 1),
   })
 
   const chartData = (data?.months ?? []).map((m) => ({
@@ -65,6 +72,62 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {/* Monthly overview */}
+      {insights && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Receita do mês', value: insights.income, color: 'text-green-400' },
+              { label: 'Gasto até agora', value: insights.spent, color: 'text-red-400' },
+              { label: 'Valor comprometido', value: insights.committed, color: 'text-amber-400' },
+              { label: 'Valor disponível', value: insights.available, color: insights.available >= 0 ? 'text-accent' : 'text-red-400' },
+            ].map(c => (
+              <div key={c.label} className="card">
+                <p className="text-xs text-slate-500 mb-1">{c.label}</p>
+                <p className={`text-lg font-bold ${c.color}`}>{fmt(c.value)}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card">
+              <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <CreditCard size={15} className="text-accent" /> Gasto por conta
+              </h2>
+              {insights.byAccount.length === 0 ? (
+                <p className="text-slate-500 text-sm py-4 text-center">Sem gastos neste mês</p>
+              ) : (
+                <div className="space-y-2">
+                  {insights.byAccount.map(a => (
+                    <div key={a.accountId} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">{a.accountName}</span>
+                      <span className="text-slate-100 font-medium">{fmt(a.spent)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="card">
+              <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <Tag size={15} className="text-green-400" /> Gasto por categoria
+              </h2>
+              {insights.byCategory.length === 0 ? (
+                <p className="text-slate-500 text-sm py-4 text-center">Sem gastos neste mês</p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {insights.byCategory.map(c => (
+                    <div key={c.categoryId ?? 'none'} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">{c.categoryName}</span>
+                      <span className="text-slate-100 font-medium">{fmt(c.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Annual table */}
       <div className="card overflow-x-auto">
@@ -148,6 +211,50 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Recent & top expenses */}
+      {insights && (insights.recentTransactions.length > 0 || insights.topExpenses.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="card">
+            <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+              <Wallet size={15} className="text-accent" /> Gastos recentes
+            </h2>
+            <div className="space-y-2">
+              {insights.recentTransactions.slice(0, 6).map(t => (
+                <div key={t.id} className="flex items-center justify-between text-sm gap-3">
+                  <div className="min-w-0">
+                    <p className="text-slate-200 truncate">{t.description}</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(t.transactionDate).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' })} · {t.financialAccountName}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 font-medium ${t.type === 0 ? 'text-green-400' : 'text-slate-100'}`}>
+                    {t.type === 0 ? '+' : '−'}{fmt(t.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+              <TrendingDown size={15} className="text-red-400" /> Maiores gastos do mês
+            </h2>
+            <div className="space-y-2">
+              {insights.topExpenses.slice(0, 6).map(t => (
+                <div key={t.id} className="flex items-center justify-between text-sm gap-3">
+                  <div className="min-w-0">
+                    <p className="text-slate-200 truncate">{t.description}</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(t.transactionDate).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: '2-digit' })} · {t.financialAccountName}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-medium text-red-400">{fmt(t.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

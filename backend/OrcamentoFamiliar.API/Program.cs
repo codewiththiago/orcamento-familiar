@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OrcamentoFamiliar.Application.Interfaces;
 using OrcamentoFamiliar.Infrastructure.Data;
+using OrcamentoFamiliar.Infrastructure.Parsers;
 using OrcamentoFamiliar.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,6 +64,16 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IFinancialAccountService, FinancialAccountService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<ICategorizationService, CategorizationService>();
+builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IInsightsService, InsightsService>();
+builder.Services.AddScoped<ICurrentFamily, CurrentFamilyService>();
+builder.Services.AddScoped<ITransactionImportParser, CsvTransactionParser>();
+builder.Services.AddScoped<ITransactionImportParser, OfxTransactionParser>();
+builder.Services.AddScoped<IImportParserFactory, ImportParserFactory>();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

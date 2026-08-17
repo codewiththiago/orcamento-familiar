@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Identity;
+using OrcamentoFamiliar.Domain.Entities;
 
 namespace OrcamentoFamiliar.Infrastructure.Data;
 
 public class ApplicationUser : IdentityUser
 {
     public string Name { get; set; } = string.Empty;
+    public Guid? FamilyId { get; set; }
+    public Family? Family { get; set; }
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 }
 
