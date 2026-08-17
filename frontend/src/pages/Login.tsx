@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Wallet, Eye, EyeOff, ArrowLeft, KeyRound } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, KeyRound } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { resetPassword } from '../api/auth'
 import toast from 'react-hot-toast'
@@ -227,9 +227,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Wallet size={28} className="text-white" />
-          </div>
+          <img
+            src="/logo-app.png"
+            alt="Orçamento Familiar"
+            className="w-16 h-16 rounded-2xl object-contain mx-auto mb-4"
+          />
           <h1 className="text-2xl font-bold text-slate-100">Orçamento Familiar</h1>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'login' ? 'Faça login para continuar' : 'Recuperar senha'}

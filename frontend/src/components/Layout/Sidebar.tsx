@@ -30,9 +30,11 @@ export default function Sidebar() {
     <aside className="w-16 sm:w-56 bg-bg-secondary border-r border-slate-700/50 flex flex-col shrink-0">
       <div className="p-4 border-b border-slate-700/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shrink-0">
-            <Wallet size={16} className="text-white" />
-          </div>
+          <img
+            src="/logo-app.png"
+            alt="Orçamento Familiar"
+            className="w-9 h-9 rounded-lg object-contain shrink-0"
+          />
           <span className="hidden sm:block font-semibold text-sm text-slate-100 leading-tight">
             Orçamento<br />Familiar
           </span>
