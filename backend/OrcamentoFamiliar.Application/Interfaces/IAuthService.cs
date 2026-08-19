@@ -7,7 +7,7 @@ public interface IAuthService
     Task<AuthResponseDto?> LoginAsync(LoginRequestDto dto);
     Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken);
     Task RevokeRefreshTokenAsync(string refreshToken);
-    Task<AuthResponseDto?> RegisterAsync(RegisterDto dto);
+    Task<RegisterResult> RegisterAsync(RegisterDto dto);
     Task<List<UserDto>> GetUsersAsync();
     Task<RegistrationStatusDto> GetRegistrationStatusAsync();
     Task<FamilyCodeDto> GetFamilyCodeAsync();

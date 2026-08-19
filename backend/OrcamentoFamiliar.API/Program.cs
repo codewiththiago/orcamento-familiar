@@ -9,6 +9,9 @@ using OrcamentoFamiliar.Infrastructure.Data;
 using OrcamentoFamiliar.Infrastructure.Parsers;
 using OrcamentoFamiliar.Infrastructure.Services;
 
+// Disable config hot-reload to avoid exhausting inotify instances on shared hosts (Render, etc.)
+Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
@@ -22,6 +25,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();

@@ -127,8 +127,9 @@ export default function Register() {
         toast.success(`Bem-vindo, ${data.name}!`)
         navigate('/dashboard')
       }
-    } catch {
-      toast.error(mode === 'join' ? 'Código ou PIN inválidos.' : 'Erro ao criar conta. Tente novamente.')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      toast.error(msg ?? (mode === 'join' ? 'Código ou PIN inválidos.' : 'Erro ao criar conta. Tente novamente.'))
     }
   }
 

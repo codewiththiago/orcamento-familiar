@@ -1,5 +1,13 @@
 namespace OrcamentoFamiliar.Application.DTOs.Auth;
 
+public record RegisterResult(AuthResponseDto? Data, string? Error = null)
+{
+    public bool Succeeded => Data != null;
+    public static RegisterResult Ok(AuthResponseDto data) => new(data);
+    public static RegisterResult Fail(string error) => new(null, error);
+}
+
+
 public class RegisterDto
 {
     public string Name { get; set; } = string.Empty;

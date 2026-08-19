@@ -59,13 +59,14 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
-        if (result == null) return BadRequest(new { message = "Código ou PIN inválidos, ou e-mail já cadastrado." });
+        if (!result.Succeeded) return BadRequest(new { message = result.Error });
 
-        SetRefreshTokenCookie(result.RefreshToken);
+        var data = result.Data!;
+        SetRefreshTokenCookie(data.RefreshToken);
         return Ok(new
         {
-            result.AccessToken, result.UserId, result.Name, result.Email,
-            result.FamilyId, result.FamilyName, result.FamilyCode, result.FamilyPin
+            data.AccessToken, data.UserId, data.Name, data.Email,
+            data.FamilyId, data.FamilyName, data.FamilyCode, data.FamilyPin
         });
     }
 

@@ -65,10 +65,10 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
+    public async Task<RegisterResult> RegisterAsync(RegisterDto dto)
     {
         var existing = await _userManager.FindByEmailAsync(dto.Email.Trim().ToLower());
-        if (existing != null) return null;
+        if (existing != null) return RegisterResult.Fail("E-mail já cadastrado.");
 
         var hasFamilies = await _context.Families.AnyAsync();
         var mode = dto.FamilyMode?.Trim().ToLowerInvariant();
@@ -80,12 +80,12 @@ public class AuthService : IAuthService
         if (mode == "join" && hasFamilies)
         {
             if (string.IsNullOrEmpty(dto.InviteCode) || string.IsNullOrEmpty(dto.Pin))
-                return null;
+                return RegisterResult.Fail("Código e PIN são obrigatórios para entrar em uma família.");
 
             var access = await _context.FamilyAccess
                 .FirstOrDefaultAsync(a => a.InviteCode == dto.InviteCode.Trim().ToUpper());
             if (access == null || access.Pin != dto.Pin.Trim())
-                return null;
+                return RegisterResult.Fail("Código ou PIN inválidos.");
 
             familyId = access.FamilyId;
         }
@@ -124,7 +124,11 @@ public class AuthService : IAuthService
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded) return null;
+        if (!result.Succeeded)
+        {
+            var error = string.Join(" ", result.Errors.Select(e => e.Description));
+            return RegisterResult.Fail(error);
+        }
 
         if (newFamilyCode is not null)
         {
@@ -142,7 +146,7 @@ public class AuthService : IAuthService
         var response = await BuildResponseAsync(user, refreshToken);
         response.FamilyCode = newFamilyCode;
         response.FamilyPin = newFamilyPin;
-        return response;
+        return RegisterResult.Ok(response);
     }
 
     public async Task<RegistrationStatusDto> GetRegistrationStatusAsync()
